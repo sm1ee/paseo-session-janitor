@@ -49,6 +49,8 @@ The plugin writes a receipt before each mutation and verifies the result afterwa
 
 ## Local data
 
+session-janitor 0.1.2+ reads the paired session-recovery plugin's local protection list. Sessions with pending recovery and their descendants are kept. Dismiss or exclude the recovery candidate to release that protection. An unreadable or mismatched protection list pauses cleanup. Other cleanup tools do not share this integration.
+
 Settings are shared by clients connected to the same host. Session metadata, protection choices, postponements, observations, and cleanup receipts stay under that daemon's `plugin-data/paseo-session-janitor/` directory with owner-only file permissions. No prompts or conversation bodies are read by the plugin. It sends no data to an external service.
 
 Paseo's local credential is read only to authenticate to the plugin's own daemon. It is not copied into settings or logs. The plugin accepts only a local socket or loopback listener and checks the daemon identity. A worker lock prevents two installations from cleaning the same daemon at once.

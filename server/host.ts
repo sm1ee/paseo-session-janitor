@@ -10,6 +10,7 @@ import WebSocket from "ws";
 import { z } from "zod";
 import type { Agent, Inventory, Workspace } from "../shared/model";
 import { FileStore, type StateStore } from "./store";
+import { readRecoveryHolds } from "./recovery";
 
 export interface JanitorHost {
   store: StateStore;
@@ -147,6 +148,24 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
     // Internal delete semantics were reviewed against this daemon series.
     if (typeof version === "string" && !/^0\.11\./.test(version)) throw new Error("This daemon version has not been verified for session deletion.");
     const paseo: PaseoApi = createPaseoApi(driver);
+    const protectRecovery = async (agents: Agent[]): Promise<Agent[]> => {
+      const holds = await readRecoveryHolds(home, lock.serverId);
+      return agents.map((agent) => ({ ...agent, recoveryHold: holds.has(agent.id) }));
+    };
+    const checkRecovery = async (id: string): Promise<void> => {
+      const holds = await readRecoveryHolds(home, lock.serverId);
+      if (!holds.size) return;
+      const seen = new Set<string>();
+      let current: string | null = id;
+      while (current) {
+        if (seen.has(current) || seen.size > 50) throw new Error("Recovery ancestry could not be verified. Cleanup is paused.");
+        seen.add(current);
+        if (holds.has(current)) throw new Error("Session or parent has pending recovery. Dismiss it in session-recovery before cleanup.");
+        const result = await paseo.agents.ref(current).refresh();
+        if (!result?.agent) throw new Error("Recovery ancestry changed. Cleanup is paused.");
+        current = metadata(result.agent).parentId;
+      }
+    };
     const launchAgents = process.platform === "darwin" ? await readdir(join(homedir(), "Library", "LaunchAgents")).catch(() => [] as string[]) : [];
     const otherCleaner = launchAgents.some((name) => /(?:^|[._-])paseo[-._](?:subagent[-._])?(?:janitor|cleaner)\.plist$/i.test(name)) && !await exists(join(home, "disable-subagent-janitor"));
     return {
@@ -174,13 +193,13 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
           return page;
         });
         await assertIdentity();
-        return { agents: agents.map(({ agent }) => metadata(agent)), workspaces: workspaces.map((w) => ({ id: w.id, pinned: Boolean(w.pinnedAt), archiving: Boolean(w.archivingAt) })) };
+        return { agents: await protectRecovery(agents.map(({ agent }) => metadata(agent))), workspaces: workspaces.map((w) => ({ id: w.id, pinned: Boolean(w.pinnedAt), archiving: Boolean(w.archivingAt) })) };
       },
       async fetch(id) {
         await assertIdentity();
         const response = await paseo.agents.ref(id).refresh();
         await assertIdentity();
-        return response?.agent ? metadata(response.agent) : null;
+        return response?.agent ? (await protectRecovery([metadata(response.agent)]))[0]! : null;
       },
       async children(id) {
         await assertIdentity();
@@ -188,7 +207,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
         const first = await driver.fetchAgentHistory(options);
         const entries = await collectPages(first, (cursor) => driver.fetchAgentHistory({ ...options, page: { limit: 200, cursor } }));
         await assertIdentity();
-        return entries.map(({ agent }) => metadata(agent));
+        return protectRecovery(entries.map(({ agent }) => metadata(agent)));
       },
       async workspaces(ids) {
         await assertIdentity();
@@ -201,8 +220,8 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
         await assertIdentity();
         return result;
       },
-      async archive(id) { await assertIdentity(); await paseo.agents.ref(id).archive(); },
-      async delete(id) { await assertIdentity(); await driver.deleteAgent(id); },
+      async archive(id) { await assertIdentity(); await checkRecovery(id); await assertIdentity(); await paseo.agents.ref(id).archive(); },
+      async delete(id) { await assertIdentity(); await checkRecovery(id); await assertIdentity(); await driver.deleteAgent(id); },
       close,
     };
   } catch (error) {

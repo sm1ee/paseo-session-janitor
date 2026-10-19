@@ -16,6 +16,12 @@ function setup(agents: Agent[] = [agent("parent"), agent("child", { parentId: "p
   return { inventory, state, stable, settings, rows: (now = start + 7 * HOUR) => plan(inventory, state, settings, now, stable) };
 }
 describe("archive policy", () => {
+  it("keeps a recovery candidate and descendants of a protected parent", () => {
+    const s = setup([agent("parent", { recoveryHold: true }), agent("child", { parentId: "parent" })]);
+    expect(s.rows()[1]).toMatchObject({ action: "keep", protected: true });
+    expect(s.rows()[1]?.reason).toMatch(/pending recovery/);
+    expect(() => deletionTree("parent", s.inventory, s.state, start)).toThrow(/pending recovery/);
+  });
   it("only schedules finished children, after a full observation period", () => {
     const s = setup();
     expect(s.rows().find((r) => r.id === "parent")?.action).toBe("keep");

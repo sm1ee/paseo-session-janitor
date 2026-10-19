@@ -8,7 +8,7 @@ export interface Agent {
   parentId: string | null; status: string; updatedAt: string; lastUserMessageAt: string | null;
   attentionReason: string | null; attentionTimestamp: string | null;
   archivedAt: string | null; activeTurn: string | null | undefined;
-  pendingPermissions: number; openTab: boolean; internal: boolean;
+  pendingPermissions: number; openTab: boolean; internal: boolean; recoveryHold?: boolean;
 }
 export interface Workspace { id: string; pinned: boolean; archiving: boolean }
 export interface Inventory { agents: Agent[]; workspaces: Workspace[] }
@@ -87,6 +87,7 @@ export function updatePins(workspaces: Workspace[], state: SavedState): void {
 }
 export function protectionReason(agent: Agent, parents: Agent[], inventory: Inventory, state: SavedState, now: number): string | null {
   const family = [agent, ...parents];
+  if (family.some((a) => a.recoveryHold)) return "Session or parent has pending recovery; dismiss it in session-recovery before cleanup";
   if (family.some((a) => a.internal)) return "Internal session";
   if (family.some((a) => state.protectedIds.includes(a.id))) return "Protected session or parent";
   if (family.some((a) => (state.snoozed[a.id] ?? 0) > now)) return "Cleanup postponed for this session or parent";
