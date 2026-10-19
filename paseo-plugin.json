@@ -1,9 +1,19 @@
 {
-  "id": "paseo-session-janitor",
-  "name": "Session janitor",
+  "id": "session-janitor",
+  "name": "session-janitor",
   "description": "Archive finished subagents and clean up archived sessions after a retention period.",
-  "build": [["npm", "ci", "--ignore-scripts", "--omit=dev"]],
-  "media": [],
+  "build": [
+    [
+      "npm",
+      "ci",
+      "--ignore-scripts",
+      "--omit=dev"
+    ]
+  ],
+  "media": [
+    "assets/settings.png",
+    "assets/navigation.png"
+  ],
   "requirements": {
     "paseo": ">=0.11.4 <0.12.0"
   }

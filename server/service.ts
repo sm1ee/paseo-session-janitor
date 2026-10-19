@@ -66,7 +66,7 @@ export class JanitorService {
     if (this.stopped || generation !== this.generation) throw new Error("Cleanup was paused or settings changed. Refresh and try again.");
   }
   private async ready(): Promise<JanitorHost> {
-    if (this.stopped) throw new Error("Session janitor has stopped.");
+    if (this.stopped) throw new Error("session-janitor has stopped.");
     if (this.host) return this.host;
     const host = await this.connect(this.settings.daemonHome);
     try {

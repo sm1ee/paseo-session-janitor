@@ -12,7 +12,7 @@ type Scope = typeof scopeOptions[number][0];
 const stateText = { starting: "Connecting…", preview: "Preview only", running: "Automatic cleanup is on", error: "Cleanup is paused" };
 function date(value: string | null): string { return value ? new Date(value).toLocaleString() : ""; }
 
-export function JanitorScreen({ theme, layout, params }: PluginScreenProps) {
+export function JanitorScreen({ theme, layout, params, onOpenSettings }: PluginScreenProps & { onOpenSettings: () => void }) {
   const requestedId = typeof params?.agentId === "string" ? params.agentId : "";
   const [query, setQuery] = useState(requestedId);
   const [scope, setScope] = useState<Scope>(requestedId ? "all" : "queue");
@@ -56,10 +56,16 @@ export function JanitorScreen({ theme, layout, params }: PluginScreenProps) {
   const data = result.data;
   return <ScrollView style={{ flex: 1, backgroundColor: colors.surface0 }} contentContainerStyle={{ padding: layout.compact ? 16 : 24, gap: 20, maxWidth: 1040, width: "100%", alignSelf: "center" }}>
     <View style={{ gap: 8 }}>
-      <Text style={{ ...text, fontSize: 24, fontWeight: "600" }}>Session janitor</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <Text style={{ ...text, fontSize: 24, fontWeight: "600", flexShrink: 1 }}>session-janitor</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={onOpenSettings}
+          style={{ paddingVertical: 9, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface2 }}>
+          <Text style={{ ...text, fontSize: 13 }}>Settings</Text>
+        </Pressable>
+      </View>
       <Text style={muted}>Archive finished subagents after a quiet period. Delete archived sessions when their retention period ends.</Text>
       <Text style={{ ...text, fontWeight: "600" }}>{data ? stateText[data.state] : "Connecting…"}</Text>
-      {data?.state === "preview" && <Text style={muted}>Automatic changes are off. Enable them in Settings → Plugins → Session janitor. Manual deletion is available below.</Text>}
+      {data?.state === "preview" && <Text style={muted}>Automatic changes are off. Open Settings to enable them. Manual deletion is available below.</Text>}
       {data?.otherCleaner && <Text style={text}>A separate subagent cleaner is installed on this Mac. It can still archive sessions while this plugin is in preview mode.</Text>}
       {(data?.error || result.isError) && <Text style={text}>{data?.error ?? "Cannot read this host's session list. Check the connection and refresh."}</Text>}
       {data && <Text style={muted}>{data.counts.archive} scheduled for archive · {data.counts.delete} scheduled for deletion · {data.counts.protected} protected · {data.counts.total} sessions</Text>}

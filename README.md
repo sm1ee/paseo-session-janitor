@@ -1,4 +1,4 @@
-# Session janitor
+# session-janitor
 
 Clean up finished Paseo subagents and archived sessions without keeping a separate cleanup script running.
 
@@ -18,10 +18,10 @@ All timing values can be changed in settings. The plugin starts in **preview mod
 Requires the Paseo **0.11.4–0.11.x** daemon and app. On the daemon machine:
 
 ```sh
-paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.0
+paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.1
 ```
 
-Open **Session janitor** in the sidebar or Command Center. Review **All sessions** to see exclusions, then open **Settings → Plugins → Session janitor** to enable automatic cleanup.
+Open **session-janitor** in the sidebar above the workspace list, alongside Session triage. Use **Settings** at the top of its screen to change cleanup rules. Review **All sessions** to see exclusions, then open **Settings → Plugins → session-janitor** to enable automatic cleanup.
 
 Existing archives receive a full retention period when automation is enabled. Disabling and re-enabling automation starts that period again. Turning it off does not restore sessions already deleted.
 
@@ -55,7 +55,7 @@ Paseo's local credential is read only to authenticate to the plugin's own daemon
 
 Permanent deletion and background startup currently use the version-pinned `@getpaseo/client` adapter because Paseo's public plugin SDK does not expose those operations. The supported version range is capped at 0.11.x for that reason.
 
-If another cleanup script is installed, review its policy before enabling this plugin. Session janitor does not disable or change other cleaners.
+If another cleanup script is installed, review its policy before enabling this plugin. session-janitor does not disable or change other cleaners.
 
 ## Development
 
@@ -66,3 +66,11 @@ npm test
 ```
 
 Tests use an in-memory host and temporary plugin-owned files. They never delete existing Paseo sessions.
+
+## Screenshots
+
+![session-janitor in the sidebar](assets/navigation.png)
+
+![session-janitor settings](assets/settings.png)
+
+Captured from Paseo and cropped to omit host and session details.

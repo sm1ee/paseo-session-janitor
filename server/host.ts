@@ -75,7 +75,7 @@ export function localEndpoint(listen: string): { url: string; socketPath?: strin
   const target = new URL(`ws://${listen}/ws`);
   if (target.hostname === "0.0.0.0") target.hostname = "127.0.0.1";
   if (target.hostname === "[::]") target.hostname = "[::1]";
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) || target.username || target.password || target.pathname !== "/ws" || target.search || target.hash) throw new Error("Session janitor needs a loopback listener or a local socket.");
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) || target.username || target.password || target.pathname !== "/ws" || target.search || target.hash) throw new Error("session-janitor needs a loopback listener or a local socket.");
   return { url: target.href };
 }
 async function exists(path: string): Promise<boolean> {
@@ -91,7 +91,7 @@ async function acquireLease(directory: string): Promise<() => Promise<void>> {
     let previous: { pid: number };
     try { previous = z.object({ pid: z.number().int().positive(), nonce: z.string() }).parse(JSON.parse(await readFile(path, "utf8"))); }
     catch { throw new Error("Cannot verify the cleanup worker lock. Cleanup is paused."); }
-    try { process.kill(previous.pid, 0); throw new Error("Another Session janitor worker is already running."); }
+    try { process.kill(previous.pid, 0); throw new Error("Another session-janitor worker is already running."); }
     catch (probe) { if ((probe as NodeJS.ErrnoException).code !== "ESRCH") throw probe; }
     await unlink(path);
     await writeFile(path, owner, { flag: "wx", mode: 0o600 });
@@ -108,9 +108,10 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
   const home = resolveHome(configuredHome);
   let lock: z.output<typeof lockSchema>;
   try { lock = lockSchema.parse(JSON.parse(await readFile(join(home, "paseo.pid"), "utf8"))); }
-  catch { throw new Error("Cannot find this daemon. Check Paseo home in Session janitor settings."); }
+  catch { throw new Error("Cannot find this daemon. Check Paseo home in session-janitor settings."); }
   if (!await belongsToDaemon(parentPid, lock.pid)) throw new Error("This Paseo home belongs to another daemon. Cleanup is paused.");
   const endpoint = localEndpoint(lock.listen);
+  // Keep the original data location so the rename preserves protections and receipts.
   const directory = join(home, "plugin-data", "paseo-session-janitor");
   const release = await acquireLease(directory);
   const readIdentity = async () => {
