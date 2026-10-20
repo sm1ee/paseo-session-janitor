@@ -18,10 +18,12 @@ All timing values can be changed in settings. The plugin starts in **preview mod
 Requires the **stable Paseo 0.11.4–0.12.x** daemon and app. On the daemon machine:
 
 ```sh
-paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.3
+paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.4
 ```
 
 Open **session-janitor** in the sidebar above the workspace list, alongside Session triage. Use **Settings** at the top of its screen to change cleanup rules. Review **All sessions** to see exclusions, then open **Settings → Plugins → session-janitor** to enable automatic cleanup.
+
+The sidebar shortcut is hidden in the iOS and Android apps. Use **Open session-janitor** in the Command Center to open it there.
 
 Existing archives receive a full retention period when automation is enabled. Disabling and re-enabling automation starts that period again. Turning it off does not restore sessions already deleted.
 

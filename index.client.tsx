@@ -1,5 +1,6 @@
 import type { PluginClientContext, PluginScreenProps, PluginSidebarItemProps } from "@getpaseo/plugin/client";
 import { SidebarRow } from "@getpaseo/plugin/client/ui";
+import { Platform } from "react-native";
 import { JanitorScreen } from "./client/screen";
 import { JanitorSettings } from "./client/settings";
 
@@ -18,7 +19,7 @@ export default function contribute(client: PluginClientContext) {
     return <JanitorScreen {...props} onOpenSettings={() => client.openSettings("preferences")} />;
   }
   client.addScreen({ id: "main", title: "session-janitor", Component: Screen });
-  client.addSidebarHeaderItem({ id: "main", title: "session-janitor", Component: JanitorItem });
+  if (Platform.OS === "web") client.addSidebarHeaderItem({ id: "main", title: "session-janitor", Component: JanitorItem });
   client.addSettingsScreen({ id: "preferences", title: "Settings", icon: "Settings2", Component: JanitorSettings });
   client.addCommandCenterItem({ id: "open", title: "Open session-janitor", icon: "BrushCleaning", context: "global", onSelect({ openScreen }) { openScreen({ screenId: "main" }); } });
   client.addCommandCenterItem({ id: "settings", title: "session-janitor settings", icon: "Settings2", context: "global", onSelect({ openSettings }) { openSettings("preferences"); } });
