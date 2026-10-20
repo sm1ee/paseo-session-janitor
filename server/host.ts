@@ -26,13 +26,18 @@ export interface JanitorHost {
 }
 
 export function metadata(a: PaseoAgent): Agent {
+  // In 0.11.4 and 0.12.x, directory items and dormant stored snapshots omit
+  // activeTurn. Use their inactive lifecycle for planning without restoring a
+  // provider. The final fetch compares a full live or dormant snapshot again;
+  // an explicit active turn, running lifecycle or missing permissions blocks it.
+  const inactiveStored = a.activeTurn === undefined && ["idle", "error", "closed"].includes(a.status) && Array.isArray(a.pendingPermissions);
   return {
     id: a.id, title: a.title || `Untitled session (${a.id.slice(0, 8)})`, provider: a.provider,
     workspaceId: a.workspaceId ?? null, parentId: a.labels["paseo.parent-agent-id"]?.trim() || null,
     status: a.status, updatedAt: a.updatedAt, lastUserMessageAt: a.lastUserMessageAt,
     attentionReason: a.attentionReason ?? null, attentionTimestamp: a.attentionTimestamp ?? null,
     archivedAt: a.archivedAt ?? null,
-    activeTurn: a.activeTurn === undefined ? undefined : a.activeTurn?.turnId ?? null,
+    activeTurn: a.activeTurn === undefined ? inactiveStored ? null : undefined : a.activeTurn?.turnId ?? null,
     pendingPermissions: Array.isArray(a.pendingPermissions) ? a.pendingPermissions.length : -1,
     openTab: Object.entries(a.labels).some(([key, value]) => key.startsWith("paseo.open-agent-tab.") && String(value).toLowerCase() === "true"),
     internal: "internal" in a && a.internal === true,

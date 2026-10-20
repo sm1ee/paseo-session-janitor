@@ -3,6 +3,8 @@ import { preferences, statusInput } from "../shared/contracts";
 import { DAY, HOUR, emptyState, type Agent, type Inventory, type SavedState } from "../shared/model";
 import type { JanitorHost } from "./host";
 import { JanitorService } from "./service";
+import { metadata } from "./host";
+import type { PaseoAgent } from "@getpaseo/client";
 
 const start = Date.parse("2026-10-20T00:00:00Z");
 function agent(id: string, extra: Partial<Agent> = {}): Agent {
@@ -59,6 +61,13 @@ describe("automatic cleanup", () => {
     expect(f.host.archive).toHaveBeenCalledExactlyOnceWith("child");
     expect(f.saved().history.at(-1)?.result).toBe("done");
     expect(f.saved().receipts).toEqual({});
+    await f.service.stop();
+  });
+  it("archives dormant finished children after observing an idle stored parent", async () => {
+    const snapshots = [agent("parent"), agent("child", { parentId: "parent" })].map((a) => metadata({ ...a, labels: a.parentId ? { "paseo.parent-agent-id": a.parentId } : {},
+      pendingPermissions: [], activeTurn: undefined } as unknown as PaseoAgent));
+    const f = fixture(snapshots); await f.service.configure(f.settings); f.advance(HOUR); await f.service.scanNow();
+    expect(f.host.archive).toHaveBeenCalledExactlyOnceWith("child"); expect(f.saved().history.at(-1)?.result).toBe("done");
     await f.service.stop();
   });
   it("restarts retention when automation is first enabled", async () => {
