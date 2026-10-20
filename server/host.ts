@@ -1,16 +1,17 @@
 import { createPaseoApi, type PaseoAgent, type PaseoApi } from "@getpaseo/client";
-import { DaemonClient, type WebSocketLike } from "@getpaseo/client/internal/daemon-client";
+import { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { access, mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
-import WebSocket from "ws";
 import { z } from "zod";
 import type { Agent, Inventory, Workspace } from "../shared/model";
 import { FileStore, type StateStore } from "./store";
 import { readRecoveryHolds } from "./recovery";
+import { daemonCompatibilityError } from "./compatibility";
+import { localWebSocketFactory } from "./transport";
 
 export interface JanitorHost {
   store: StateStore;
@@ -103,7 +104,7 @@ async function acquireLease(directory: string): Promise<() => Promise<void>> {
   };
 }
 
-// 0.11.4 has no public permanent-delete operation or startup SDK context.
+// 0.11 and 0.12 have no public permanent-delete operation or startup SDK context.
 // Keep this version-pinned adapter on the daemon and authenticate only to its owner.
 export async function openLocalHost(configuredHome: string, parentPid = process.ppid): Promise<JanitorHost> {
   const home = resolveHome(configuredHome);
@@ -120,7 +121,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
     if (current.pid !== lock.pid || current.serverId !== lock.serverId || current.listen !== lock.listen) throw new Error("The daemon changed. Reconnect before cleaning up.");
   };
   const driver = new DaemonClient({
-    url: endpoint.url, clientId: `session-janitor-${randomUUID()}`, clientType: "cli", appVersion: "0.11.4",
+    url: endpoint.url, clientId: `session-janitor-${randomUUID()}`, clientType: "cli", appVersion: "0.12.0",
     connectTimeoutMs: 10_000, reconnect: { enabled: false },
     logger: { debug() {}, info() {}, warn() {}, error() {} },
     localCredential: async () => {
@@ -129,7 +130,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
       if (!/^[A-Za-z0-9_-]{43}$/.test(credential)) throw new Error("The local daemon credential is unavailable.");
       return credential;
     },
-    webSocketFactory: (url, options) => new WebSocket(url, options?.protocols, { headers: options?.headers, ...(endpoint.socketPath ? { socketPath: endpoint.socketPath } : {}) }) as unknown as WebSocketLike,
+    webSocketFactory: localWebSocketFactory(endpoint.socketPath),
   });
   let closed = false;
   const close = async () => {
@@ -144,9 +145,9 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
   try {
     await driver.connect();
     await assertIdentity();
-    const version = driver.getLastServerInfoMessage()?.version;
-    // Internal delete semantics were reviewed against this daemon series.
-    if (typeof version === "string" && !/^0\.11\./.test(version)) throw new Error("This daemon version has not been verified for session deletion.");
+    const compatibilityError = daemonCompatibilityError(driver.getLastServerInfoMessage()?.version, driver.supportsBackgroundWorkspaces());
+    if (compatibilityError) throw new Error(compatibilityError);
+    const backgroundFilter = driver.supportsBackgroundWorkspaces() ? { includeBackground: true } : {};
     const paseo: PaseoApi = createPaseoApi(driver);
     const protectRecovery = async (agents: Agent[]): Promise<Agent[]> => {
       const holds = await readRecoveryHolds(home, lock.serverId);
@@ -173,7 +174,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
       async list(check) {
         check?.();
         await assertIdentity();
-        const agentsOptions = { filter: { includeArchived: true }, sort: [{ key: "created_at" as const, direction: "asc" as const }], page: { limit: 200 } };
+        const agentsOptions = { filter: { includeArchived: true, ...backgroundFilter }, sort: [{ key: "created_at" as const, direction: "asc" as const }], page: { limit: 200 } };
         // History includes stored agents whose provider is currently unavailable.
         const firstAgents = await driver.fetchAgentHistory(agentsOptions);
         check?.();
@@ -183,7 +184,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
           check?.();
           return page;
         });
-        const workspaceOptions = { sort: [{ key: "name" as const, direction: "asc" as const }], page: { limit: 200 } };
+        const workspaceOptions = { filter: backgroundFilter, sort: [{ key: "name" as const, direction: "asc" as const }], page: { limit: 200 } };
         const firstWorkspaces = await paseo.workspaces.list(workspaceOptions);
         check?.();
         const workspaces = await collectPages(firstWorkspaces, async (cursor) => {
@@ -203,7 +204,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
       },
       async children(id) {
         await assertIdentity();
-        const options = { filter: { includeArchived: true, labels: { "paseo.parent-agent-id": id } }, page: { limit: 200 } };
+        const options = { filter: { includeArchived: true, ...backgroundFilter, labels: { "paseo.parent-agent-id": id } }, page: { limit: 200 } };
         const first = await driver.fetchAgentHistory(options);
         const entries = await collectPages(first, (cursor) => driver.fetchAgentHistory({ ...options, page: { limit: 200, cursor } }));
         await assertIdentity();
@@ -213,7 +214,7 @@ export async function openLocalHost(configuredHome: string, parentPid = process.
         await assertIdentity();
         const result: Workspace[] = [];
         for (const id of new Set(ids)) {
-          const page = await paseo.workspaces.list({ filter: { idPrefix: id }, page: { limit: 200 } });
+          const page = await paseo.workspaces.list({ filter: { idPrefix: id, ...backgroundFilter }, page: { limit: 200 } });
           const workspace = page.entries.find((w) => w.id === id);
           if (workspace) result.push({ id, pinned: Boolean(workspace.pinnedAt), archiving: Boolean(workspace.archivingAt) });
         }

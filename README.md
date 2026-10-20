@@ -15,10 +15,10 @@ All timing values can be changed in settings. The plugin starts in **preview mod
 
 ## Install
 
-Requires the Paseo **0.11.4–0.11.x** daemon and app. On the daemon machine:
+Requires the **stable Paseo 0.11.4–0.12.x** daemon and app. On the daemon machine:
 
 ```sh
-paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.1
+paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.3
 ```
 
 Open **session-janitor** in the sidebar above the workspace list, alongside Session triage. Use **Settings** at the top of its screen to change cleanup rules. Review **All sessions** to see exclusions, then open **Settings → Plugins → session-janitor** to enable automatic cleanup.
@@ -29,6 +29,8 @@ Existing archives receive a full retention period when automation is enabled. Di
 
 The daemon checks every five minutes, including when the app is closed. Refreshing a large session directory runs in the background, so the screen stays responsive. Finished means Paseo reported a completed or failed turn, or the runtime is closed. An idle session alone does not qualify.
 
+On Paseo 0.12, the inventory includes background workspaces, their sessions, and archived children. Parent activity and workspace pins remain part of the cleanup checks.
+
 Before each operation, the plugin checks the session, its parent chain, open tabs, pending permissions, and child sessions again. A session with an active or unknown parent is kept. Child sessions are handled before their parents. A reconnect requires another observation before automatic changes resume.
 
 Protection and postponement apply to the whole descendant tree. Open session tabs and pinned active workspaces are excluded from automatic cleanup. Once the plugin observes a pinned workspace, it remembers the exclusion if the workspace is later archived. Pins on workspaces already archived before the plugin first saw them are not exposed by Paseo; use **Protect** for those sessions.
@@ -37,7 +39,7 @@ Paseo does not report whether a parent has finished using a result. The archive 
 
 Manual deletion can remove an unarchived main session. It includes the visible Paseo-managed child tree, blocks active sessions, pending approvals, protected sessions, and open child tabs, and expires the confirmation after five minutes. The selected main session's own tab may remain open. A changed tree requires a new review. Confirmed deletion runs in the background and reports progress. A single deletion is limited to 50 sessions; larger trees must be cleaned in smaller branches. If part of a deletion succeeds before another session changes, the remaining sessions are kept and the screen reports how many were deleted.
 
-Paseo 0.11 does not offer a conditional delete or archive request. The plugin rechecks immediately before sending a request, but those reads and the mutation are separate operations.
+Paseo 0.11 and 0.12 do not offer a conditional delete or archive request. The plugin rechecks immediately before sending a request, but those reads and the mutation are separate operations.
 
 ## What gets deleted
 
@@ -55,7 +57,9 @@ Settings are shared by clients connected to the same host. Session metadata, pro
 
 Paseo's local credential is read only to authenticate to the plugin's own daemon. It is not copied into settings or logs. The plugin accepts only a local socket or loopback listener and checks the daemon identity. A worker lock prevents two installations from cleaning the same daemon at once.
 
-Permanent deletion and background startup currently use the version-pinned `@getpaseo/client` adapter because Paseo's public plugin SDK does not expose those operations. The supported version range is capped at 0.11.x for that reason.
+Permanent deletion and background startup currently use the version-pinned `@getpaseo/client` adapter because Paseo's public plugin SDK does not expose those operations. Stable 0.11.4 through 0.12.x are supported. Unknown versions and prereleases pause cleanup until compatibility has been checked.
+
+A Paseo update does not normally require a plugin update. Changes to the daemon adapter or newly required SDK features may need one. CI checks both the 0.11.4 and 0.12.0 plugin SDKs.
 
 If another cleanup script is installed, review its policy before enabling this plugin. session-janitor does not disable or change other cleaners.
 
