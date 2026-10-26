@@ -44,7 +44,8 @@ beforeEach(async () => {
 afterEach(async () => { await host?.close(); host = undefined; vi.restoreAllMocks(); await rm(home, { recursive: true, force: true }); });
 
 describe("background workspace inventory", () => {
-  it("keeps background parents, archived children, and workspace pins across pages", async () => {
+  it.each(["0.12.0", "0.13.0"])("keeps background parents, archived children, and workspace pins across pages on %s", async (value) => {
+    version = value;
     host = await openLocalHost(home, process.pid);
     const inventory = await host.list();
     expect(inventory.agents.map((a) => a.id)).toEqual(["public", "background-parent", "background-child"]);
@@ -59,7 +60,7 @@ describe("background workspace inventory", () => {
     expect((await host.list()).agents.map((a) => a.id)).toEqual(["public"]);
     expect(await host.workspaces(["public-space"])).toEqual([{ id: "public-space", pinned: false, archiving: false }]);
   });
-  it.each([undefined, "0.13.0"])("rejects an unverified host before collecting any inventory: %s", async (value) => {
+  it.each([undefined, "0.10.0"])("rejects an unverified host before collecting any inventory: %s", async (value) => {
     version = value;
     await expect(openLocalHost(home, process.pid)).rejects.toThrow(/not supported/);
     expect(DaemonClient.prototype.fetchAgentHistory).not.toHaveBeenCalled();

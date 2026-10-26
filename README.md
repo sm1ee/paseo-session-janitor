@@ -15,10 +15,10 @@ All timing values can be changed in settings. The plugin starts in **preview mod
 
 ## Install
 
-Requires the **stable Paseo 0.11.4–0.12.x** daemon and app. On the daemon machine:
+Requires the **stable Paseo 0.11.4 or later** daemon and app. On the daemon machine:
 
 ```sh
-paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.5
+paseo plugin install github:sm1ee/paseo-session-janitor --ref v0.1.6
 ```
 
 Open **session-janitor** in the sidebar above the workspace list, alongside Session triage. Use **Settings** at the top of its screen to change cleanup rules. Review **All sessions** to see exclusions, then open **Settings → Plugins → session-janitor** to enable automatic cleanup.
@@ -61,11 +61,13 @@ Settings are shared by clients connected to the same host. Session metadata, pro
 
 Paseo's local credential is read only to authenticate to the plugin's own daemon. It is not copied into settings or logs. The plugin accepts only a local socket or loopback listener and checks the daemon identity. A worker lock prevents two installations from cleaning the same daemon at once.
 
-Permanent deletion and background startup currently use the version-pinned `@getpaseo/client` adapter because Paseo's public plugin SDK does not expose those operations. Stable 0.11.4 through 0.12.x are supported. Unknown versions and prereleases pause cleanup until compatibility has been checked.
+Permanent deletion and background startup currently use the version-pinned `@getpaseo/client` adapter because Paseo's public plugin SDK does not expose those operations. Stable Paseo 0.11.4 or later is accepted when the required daemon capabilities are present. Prereleases, malformed versions, and missing capabilities pause cleanup.
 
-A Paseo update does not normally require a plugin update. Changes to the daemon adapter or newly required SDK features may need one. CI checks both the 0.11.4 and 0.12.0 plugin SDKs.
+A Paseo update does not normally require a plugin update. Changes to the daemon adapter or newly required SDK features may need one. CI checks the 0.11.4, 0.12.0, and 0.13.0 plugin SDKs.
 
 If another cleanup script is installed, review its policy before enabling this plugin. session-janitor does not disable or change other cleaners.
+
+The manifest declares only `>=0.11.4`, without a minor-version upper bound. Compatibility is checked with Paseo 0.11.4, 0.12.0, and 0.13.0. Newer stable daemons are accepted when the required capabilities are present; a future breaking API change may still need a plugin update. SDK and runtime dependencies remain pinned for reproducible builds.
 
 ## Development
 

@@ -1,7 +1,7 @@
 {
   "name": "session-janitor",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "files": [
     "paseo-plugin.json",
     "OVERVIEW.md",
@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test:mobile": "node scripts/check-mobile-syntax.mjs",
+    "test": "vitest run --maxWorkers=2"
   },
   "devDependencies": {
     "@getpaseo/plugin": "0.12.0",
