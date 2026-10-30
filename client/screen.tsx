@@ -57,7 +57,7 @@ export function JanitorScreen({ theme, layout, params, onOpenSettings }: PluginS
   return <ScrollView style={{ flex: 1, backgroundColor: colors.surface0 }} contentContainerStyle={{ padding: layout.compact ? 16 : 24, gap: 20, maxWidth: 1040, width: "100%", alignSelf: "center" }}>
     <View style={{ gap: 8 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <Text style={{ ...text, fontSize: 24, fontWeight: "600", flexShrink: 1 }}>session-janitor</Text>
+        <Text style={{ ...text, fontSize: 24, fontWeight: "600", flexShrink: 1 }}>Session Janitor</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={onOpenSettings}
           style={{ paddingVertical: 9, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface2 }}>
           <Text style={{ ...text, fontSize: 13 }}>Settings</Text>
