@@ -32,7 +32,7 @@ export function JanitorSettings({ theme }: PluginSurfaceProps) {
   const settings = useSettings(preferences);
   const text = { color: theme.colors.foreground };
   const muted = { color: theme.colors.foregroundMuted };
-  if (settings.status !== "ready") return <SettingsSection title="session-janitor">
+  if (settings.status !== "ready") return <SettingsSection title="Session Janitor">
     <Text style={text}>{settings.status === "loading" ? "Loading settings…" : "Could not read settings. Reload them or restore defaults."}</Text>
     {settings.status !== "loading" && <SettingsCard>
       <SettingsAction label="Reload settings" actionLabel="Reload" onPress={() => { void settings.reload(); }} />
@@ -42,8 +42,8 @@ export function JanitorSettings({ theme }: PluginSurfaceProps) {
   const values = settings.values;
   const save = (next: Preferences) => { void settings.save(next, settings.revision); };
   return <View style={{ gap: 24 }}>
-    <SettingsSection title="session-janitor">
-      <Text style={muted}>Start with the preview in session-janitor. When automatic cleanup is enabled, existing archives get a full retention period from that moment.</Text>
+    <SettingsSection title="Session Janitor">
+      <Text style={muted}>Start with the preview in Session Janitor. When automatic cleanup is enabled, existing archives get a full retention period from that moment.</Text>
       <SettingsCard>
         <SettingsSwitch label="Automatic cleanup" hint="Runs on this daemon every 5 minutes, even when the app is closed. Turning this off keeps the preview and manual deletion available." value={values.enabled} disabled={settings.saving} onValueChange={(enabled) => save({ ...values, enabled })} />
         <SettingsSwitch label="Archive finished subagents" hint="Includes failed and closed subagents after the quiet period. Main sessions are never archived automatically." value={values.archiveChildren} disabled={settings.saving} onValueChange={(archiveChildren) => save({ ...values, archiveChildren })} />
@@ -55,7 +55,7 @@ export function JanitorSettings({ theme }: PluginSurfaceProps) {
     </SettingsSection>
     <TimingFields key={settings.revision} values={values} save={save} busy={settings.saving} />
     <SettingsSection title="Sessions to keep">
-      <Text style={muted}>Protect a session in the session-janitor screen to exclude it and its children. You can also postpone cleanup for 24 hours. Open session tabs, pending approvals, active parents, and pinned workspaces are excluded from automatic cleanup.</Text>
+      <Text style={muted}>Protect a session in the Session Janitor screen to exclude it and its children. You can also postpone cleanup for 24 hours. Open session tabs, pending approvals, active parents, and pinned workspaces are excluded from automatic cleanup.</Text>
       <Text style={muted}>Paseo reports turn completion, not whether a parent has finished using a result. Archiving uses an inactivity delay. Permanent deletion waits for archived parents by default.</Text>
     </SettingsSection>
   </View>;

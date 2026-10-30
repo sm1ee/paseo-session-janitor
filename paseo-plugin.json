@@ -1,6 +1,6 @@
 {
   "id": "session-janitor",
-  "name": "session-janitor",
+  "name": "Session Janitor",
   "description": "Archive finished subagents and clean up archived sessions after a retention period.",
   "build": [
     [
